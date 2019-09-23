@@ -12,7 +12,7 @@ var s{0..n} >= 0;
 
 # Objective
 
-minimize cost :sum {t in 1..n} y[t]*f[t] + x[t]*p[t] + h[t]*s[t];
+minimize cost :sum {t in 1..n} (y[t]*f[t] + x[t]*p[t] + h[t]*s[t]);
 subject to production_cycle {t in 1..n}:
     s[t] = s[t-1] + x[t] - d[t];
 subject to fixed_prod {t in 1..n}:
