@@ -8,5 +8,4 @@ read nRegions < filename;
 
 read < filename;
 
-read {i in 1..N} A[i]
-
+read {i in 1..N} A[i];

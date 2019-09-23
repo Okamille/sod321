@@ -1,0 +1,7 @@
+option solver cplexamp;
+option omit_zero_rows 1;
+option cplex_options 'mipdisplay=2 mipinterval=10 timing=1';
+model prod1.mod;
+data prod1.dat;
+printf "Starting solving ..."
+solve;

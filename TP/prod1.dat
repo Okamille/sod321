@@ -1,0 +1,7 @@
+param n := 10;
+param d{t in 1..n} := round(Uniform(100, 200));
+param f{t in 1..n} := round(Uniform(0, 200)); 
+param h{t in 1..n} := round(Uniform(0, 10));
+param p{t in 1..n} := round(Uniform(10, 30));
+
+param M := 300;
