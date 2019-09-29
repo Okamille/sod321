@@ -4,14 +4,12 @@ using LinearAlgebra: diag, norm, Symmetric
 using JuMP
 import GLPK
 
-export solve_instance
+export build_model, run_optimization!
 
 
-
-
-function solve_instance(; coordinates, airports_regions, start_id, end_id,
-                        n_min_visits, max_flight_distance,
-                        subtour_constraint="polynomial")
+function build_model(; coordinates, airports_regions, start_id, end_id,
+                     n_min_visits, max_flight_distance,
+                     subtour_constraint="polynomial")
     
     n = size(airports_regions, 1)
     distances = compute_distances(coordinates)
@@ -73,17 +71,27 @@ function solve_instance(; coordinates, airports_regions, start_id, end_id,
         println("No subtour constraints, the plane may teleport.")
     end
 
+    return model
+
+end
+
+
+function run_optimization!(model)
     optimize!(model)
+
     if termination_status(model) == MOI.OPTIMAL
-        optimal_solution = value.(x)
+        optimal_solution = value.(model[:x])
         optimal_objective = objective_value(model)
-    elseif termination_status(model) == MOI.TIME_LIMIT && has_values(model)
-        suboptimal_solution = value.(x)
-        suboptimal_objective = objective_value(model)
-    else
-        error("The model was not solved correctly.")
+        return optimal_objective, optimal_solution
     end
-    return optimal_solution, optimal_objective
+
+    if termination_status(model) == MOI.TIME_LIMIT && has_values(model)
+        suboptimal_solution = value.(model[:x])
+        suboptimal_objective = objective_value(model)
+        return suboptimal_solution, suboptimal_objective
+    end
+
+    error("The model was not solved correctly.")
 end
 
 
