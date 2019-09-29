@@ -4,6 +4,6 @@ Project repository for SOD321 course at ENSTA Paris
 
 ## TODO
 
-- [ ] Polynomial subtours constraints edge case when start_id == end_id
+- [ ] Polynomial subtours constraints
 - [ ] Exponential subtours constraints
 - [ ] Visualisation of solution
