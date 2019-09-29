@@ -1,22 +1,19 @@
-#/usr/bin/julia
+module BreitlingCup
 
+using LinearAlgebra: diag, norm, Symmetric
 using JuMP
 import GLPK
-using LinearAlgebra: diag, norm, Symmetric
+
+export solve_instance
 
 
-function run_optimization(model) # FIXME
-    optimize!(model)
-    solution = value(x)
-    optimal_value = objective_value(model)
-    return optimal_value, solution
-end
 
 
-function build_model(coordinates, airports_regions, start_id, end_id,
-                     n_min_visits, max_flight_distance, subtour_constraint)
+function solve_instance(; coordinates, airports_regions, start_id, end_id,
+                        n_min_visits, max_flight_distance,
+                        subtour_constraint="polynomial")
     
-    n = size(airports_regions)
+    n = size(airports_regions, 1)
     distances = compute_distances(coordinates)
 
     model = Model(with_optimizer(GLPK.Optimizer))
@@ -41,22 +38,24 @@ function build_model(coordinates, airports_regions, start_id, end_id,
     if start_id != end_id
         @constraint(model, dont_arrive_at_start,
                     sum(x[:, start_id]) == 0)
-        @constraint(model, dont_arrive_at_end,
+        @constraint(model, dont_leave_from_end,
                     sum(x[end_id, :]) == 0)
     end
-    @constraint(model,
-                depart_iff_arrive[id = idx[idx .!= start_id .& .!= start_id]],
-                sum(x[id, :]) - sum(x[:, id]) == 0)
-
+    @constraint(
+        model,
+        depart_iff_arrive[id in idx[(idx .!= start_id) .& (idx .!= end_id)]],
+        sum(x[id, :]) == sum(x[:, id])
+    )
     # At least n_min_visits visited airports
+    kronecker_start_end = start_id == end_id ? 1 : 0
     @constraint(model, min_visits,
-                sum(x) >= n_min_visits - (start_id == end_id))
+                sum(x) >= n_min_visits - kronecker_start_end)
 
     # Visit all regions at least once
     regions = get_regions(airports_regions, start_id, end_id)
     @constraint(
         model, visit_all_regions[r = regions],
-        sum(x[airport_regions .== r, :]) + sum(x[:, airport_regions .== r]) >= 1)
+        sum(x[airports_regions .== r, :]) + sum(x[:, airports_regions .== r]) >= 1)
 
     # Can't fly more than max_distance at once
     @constraint(model, max_distance,
@@ -65,14 +64,26 @@ function build_model(coordinates, airports_regions, start_id, end_id,
     # Subtour
     if subtour_constraint == "polynomial"  # TODO
         @variable(model, u[i = 1:n], Int)
-        @constraint(model, subtour,
-                    u[j] > u[i] - n * (1 - x[i, j]))
-    elseif subtour_constraint == "exponential"  # TODO
-        S = []
-        @constraint(sum(x[i, j]) <= len(S) - 1)
+        @constraint(model, subtour[i=1:n, j=1:n],
+                    u[j] >= u[i] - n * (1 - x[i, j]))
+    # elseif subtour_constraint == "exponential"  # TODO
+    #     S = []
+    #     @constraint(sum(x[i, j]) <= len(S) - 1)
     else
         println("No subtour constraints, the plane may teleport.")
     end
+
+    optimize!(model)
+    if termination_status(model) == MOI.OPTIMAL
+        optimal_solution = value.(x)
+        optimal_objective = objective_value(model)
+    elseif termination_status(model) == MOI.TIME_LIMIT && has_values(model)
+        suboptimal_solution = value.(x)
+        suboptimal_objective = objective_value(model)
+    else
+        error("The model was not solved correctly.")
+    end
+    return optimal_solution, optimal_objective
 end
 
 
@@ -84,14 +95,16 @@ function compute_distances(coordinates)::Symmetric{Float64, Array{Float64, 2}}
             distances[i, j] = norm(coordinates[i, :] - coordinates[j, :])
         end
     end
-    return Symmetric(distance_i_j, :L)
+    return Symmetric(distances, :L)
 end
 
 
 function get_regions(airports_regions, start_id, end_id)::Array{Int, 1}
-    start_region = airport_regions[start_id]
-    end_region = airport_regions[end_id]
+    start_region = airports_regions[start_id]
+    end_region = airports_regions[end_id]
     regions = unique(airports_regions)
-    regions = regions[regions .!= start_region .& regions .!= end_region]
+    regions = regions[(regions .!= start_region) .& (regions .!= end_region) .& (regions .!= 0)]
     return regions
+end
+
 end
