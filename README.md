@@ -4,6 +4,6 @@ Project repository for SOD321 course at ENSTA Paris
 
 ## TODO
 
-- [ ] Polynomial subtours constraints
+- [x] Polynomial subtours constraints
 - [ ] Exponential subtours constraints
 - [ ] Visualisation of solution
