@@ -45,9 +45,9 @@ function build_model(; coordinates, airports_regions, start_id, end_id,
         sum(x[id, :]) == sum(x[:, id])
     )
     # At least n_min_visits visited airports
-    kronecker_start_end = start_id == end_id ? 1 : 0
+    start_neq_end = start_id == end_id ? 0 : 1
     @constraint(model, min_visits,
-                sum(x) >= n_min_visits - kronecker_start_end)
+                sum(x) + start_neq_end >= n_min_visits)
 
     # Visit all regions at least once
     regions = get_regions(airports_regions, start_id, end_id)
@@ -60,10 +60,10 @@ function build_model(; coordinates, airports_regions, start_id, end_id,
                 x .* distances .<= max_flight_distance)
 
     # Subtour
-    if subtour_constraint == "polynomial"  # TODO
+    if subtour_constraint == "polynomial"
         @variable(model, u[i = 1:n], Int)
         @constraint(model, subtour[i=1:n, j=1:n],
-                    u[j] >= u[i] - n * (1 - x[i, j]))
+                    u[j] >= u[i] + 1 - n * (1 - x[i, j]))
     # elseif subtour_constraint == "exponential"  # TODO
     #     S = []
     #     @constraint(sum(x[i, j]) <= len(S) - 1)
