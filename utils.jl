@@ -19,7 +19,7 @@ function load_instance(instance_name)
 
     coordinates = [[parse(Int, coo) for coo in split(line)]
                     for line in lines[11:end-1]]
-    
+
     return params, regions, coordinates
 end
 

@@ -18,9 +18,11 @@ function solve_instance(instance_name, subtour_constraint)
                         subtour_constraint=subtour_constraint)
 
     if subtour_constraint == "polynomial"
-        objective, solution = run_optimization!(model)
+        @time objective, solution = run_optimization!(model)
     else
-        objective, solution = solve_with_lazy_constraints!(model, params["end_index"])
+        @time objective, solution = solve_with_lazy_constraints!(
+            model, params["start_index"], params["end_index"]
+        )
     end
 
     println(objective)

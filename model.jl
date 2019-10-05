@@ -84,18 +84,13 @@ function run_optimization!(model)
 end
 
 
-function solve_with_lazy_constraints!(model, end_id)
-    # FIXME subtours including both end_id and start_id should be dealt with differently
-    i = 0
+function solve_with_lazy_constraints!(model, start_id, end_id)
     while true
-        i += 1
         objective, solution = run_optimization!(model)
-        subtours = find_subtours(solution, end_id)
-        if size(subtours, 1) == 1
+        subtours = find_subtours(solution, start_id, end_id)
+        if size(subtours, 1) == 0
             return objective, solution
         else
-            println("Iteration $i, objective $objective")
-            println(subtours)
             x = model[:x]
             for subtour in subtours
                 S = size(subtour, 1)
@@ -108,22 +103,26 @@ function solve_with_lazy_constraints!(model, end_id)
 end
 
 
-function find_subtours(solution, end_id)
+function find_subtours(solution, start_id, end_id)
     n = size(solution, 1)
+
     not_yet_selected = Dict((i, true) for i in 1:n)
+    next_airport = start_id
+    not_yet_selected[start_id] = false
+    while next_airport != end_id
+        next_airport = argmax(solution[next_airport, :])
+        not_yet_selected[next_airport] = false
+    end
+
     subtours = []
     for current_id in 1:n
         if not_yet_selected[current_id] & (sum(solution[current_id, :]) == 1)
             path = [current_id] 
-            next_airport = current_id
-            while next_airport != end_id
-                next_airport = argmax(solution[next_airport, :])
-                if next_airport == path[1]
-                    break
-                else
-                    append!(path, next_airport)
-                end
+            next_airport = argmax(solution[current_id, :])
+            while next_airport != current_id
                 not_yet_selected[next_airport] = false
+                push!(path, next_airport)
+                next_airport = argmax(solution[next_airport, :])
             end
             push!(subtours, path)
         end
