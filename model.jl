@@ -4,7 +4,7 @@ using LinearAlgebra: diag, norm, Symmetric
 using JuMP
 import GLPK
 
-export build_model, run_optimization!
+export build_model, run_optimization!, solve_with_lazy_constraints!
 
 
 function build_model(; coordinates, airports_regions, start_id, end_id,
@@ -64,11 +64,6 @@ function build_model(; coordinates, airports_regions, start_id, end_id,
         @variable(model, u[i = 1:n], Int)
         @constraint(model, subtour[i=1:n, j=1:n],
                     u[j] >= u[i] + 1 - n * (1 - x[i, j]))
-    # elseif subtour_constraint == "exponential"  # TODO
-    #     S = []
-    #     @constraint(sum(x[i, j]) <= len(S) - 1)
-    else
-        println("No subtour constraints, the plane may teleport.")
     end
 
     return model
@@ -85,13 +80,55 @@ function run_optimization!(model)
         return optimal_objective, optimal_solution
     end
 
-    if termination_status(model) == MOI.TIME_LIMIT && has_values(model)
-        suboptimal_solution = value.(model[:x])
-        suboptimal_objective = objective_value(model)
-        return suboptimal_solution, suboptimal_objective
-    end
-
     error("The model was not solved correctly.")
+end
+
+
+function solve_with_lazy_constraints!(model, end_id)
+    # FIXME subtours including both end_id and start_id should be dealt with differently
+    i = 0
+    while true
+        i += 1
+        objective, solution = run_optimization!(model)
+        subtours = find_subtours(solution, end_id)
+        if size(subtours, 1) == 1
+            return objective, solution
+        else
+            println("Iteration $i, objective $objective")
+            println(subtours)
+            x = model[:x]
+            for subtour in subtours
+                S = size(subtour, 1)
+                @constraint(
+                    model,
+                    sum(sum(x[i, j] for j in subtour) for i in subtour) <= S - 1)
+            end
+        end
+    end
+end
+
+
+function find_subtours(solution, end_id)
+    n = size(solution, 1)
+    not_yet_selected = Dict((i, true) for i in 1:n)
+    subtours = []
+    for current_id in 1:n
+        if not_yet_selected[current_id] & (sum(solution[current_id, :]) == 1)
+            path = [current_id] 
+            next_airport = current_id
+            while next_airport != end_id
+                next_airport = argmax(solution[next_airport, :])
+                if next_airport == path[1]
+                    break
+                else
+                    append!(path, next_airport)
+                end
+                not_yet_selected[next_airport] = false
+            end
+            push!(subtours, path)
+        end
+    end
+    return subtours
 end
 
 
