@@ -1,11 +1,3 @@
-var filename := 'example.dat'
+filename := 'Instances/aerodrome_0.txt';
 
 read N < filename;
-read start < filename;
-read finish < filename;
-read toGo < filename;
-read nRegions < filename;
-
-read < filename;
-
-read {i in 1..N} A[i];
