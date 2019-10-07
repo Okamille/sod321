@@ -2,7 +2,7 @@ include("model.jl")
 include("utils.jl")
 
 using .BreitlingCup: build_model, run_optimization!, solve_with_lazy_constraints!
-using .Utils: load_instance, recover_path
+using .Utils: load_instance, recover_path, write_results_to_file
 
 
 function solve_instance(instance_name, subtour_constraint)
@@ -28,6 +28,7 @@ function solve_instance(instance_name, subtour_constraint)
     println(objective)
     path = recover_path(solution, params["start_index"], params["end_index"])
     println(path)
+    write_results_to_file(path, "results.txt")
     println()
 end
 

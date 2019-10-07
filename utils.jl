@@ -33,4 +33,9 @@ function recover_path(solution, start_id, end_id)
     return path
 end
 
+function write_results_to_file(solution, filename)
+    file = open(filename, "w")
+    write(file, solution)
+end
+
 end
