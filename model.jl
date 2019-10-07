@@ -8,15 +8,17 @@ export build_model, run_optimization!, solve_with_lazy_constraints!
 
 
 function build_model(; coordinates, airports_regions, start_id, end_id,
-                     n_min_visits, max_flight_distance,
-                     subtour_constraint="polynomial")
+    n_min_visits, max_flight_distance,
+    subtour_constraint="polynomial")
     
     n = size(airports_regions, 1)
     distances = compute_distances(coordinates)
-
+    
     model = Model(with_optimizer(GLPK.Optimizer))
     @variable(model, x[i=1:n, j=1:n], Bin)
     @constraint(model, diag(x) .== 0)  # removes x_ii
+    # Remove edges greater than max_distance
+    @constraint(model, x[distances .> max_flight_distance] .== 0)
     @objective(model, Min, sum(x .* distances))
 
     idx = [i for i=1:n]  # Useful array for boolean slicing
@@ -54,10 +56,6 @@ function build_model(; coordinates, airports_regions, start_id, end_id,
     @constraint(
         model, visit_all_regions[r = regions],
         sum(x[airports_regions .== r, :]) + sum(x[:, airports_regions .== r]) >= 1)
-
-    # Can't fly more than max_distance at once
-    @constraint(model, max_distance,
-                x .* distances .<= max_flight_distance)
 
     # Subtour
     if subtour_constraint == "polynomial"
