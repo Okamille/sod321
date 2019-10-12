@@ -4,15 +4,7 @@
 %     \PassOptionsToPackage{numbers, compress}{natbib}
 % before loading neurips_2019
 
-% ready for submission
-% \usepackage{neurips_2019}
-
-% to compile a preprint version, e.g., for submission to arXiv, add add the
-% [preprint] option:
-%     \usepackage[preprint]{neurips_2019}
-
-% to compile a camera-ready version, add the [final] option, e.g.:
-     \usepackage[final]{neurips_2019}
+\usepackage[final]{neurips_2019}
 
 % to avoid loading the natbib package, add option nonatbib:
 %     \usepackage[nonatbib]{neurips_2019}
@@ -22,6 +14,12 @@
 \usepackage[utf8]{inputenc} % allow utf-8 input
 \usepackage[T1]{fontenc}    % use 8-bit T1 fonts
 \usepackage{hyperref}       % hyperlinks
+\hypersetup{
+  colorlinks   = true, %Colours links instead of ugly boxes
+  urlcolor     = blue, %Colour for external hyperlinks
+  linkcolor    = blue, %Colour of internal links
+  citecolor   = red %Colour of citations
+}
 \usepackage{url}            % simple URL typesetting
 \usepackage{booktabs}       % professional-quality tables
 \usepackage{amsfonts}       % blackboard math symbols
@@ -30,19 +28,8 @@
 
 \title{Optimisation discrète - Course d'avions}
 
-% The \author macro works with any number of authors. There are two commands
-% used to separate the names and addresses of multiple authors: \And and \AND.
-%
-% Using \And between authors leaves it to LaTeX to determine where to break the
-% lines. Using \AND forces a line break at that point. So, if LaTeX puts 3 of 4
-% authors names on the first line, and the last on the second line, try using
-% \AND instead of \And before the third author name.
-
-\author{%
+\author{
   Quentin Burthier
-  % \thanks{Use footnote for providing further information
-  %   about author (webpage, alternative address)---\emph{not} for acknowledging
-  %   funding agencies.}
   \\
   ENSTA Paris\\
   \texttt{quentin.burthier@ensta-paris.fr} \\
@@ -64,40 +51,50 @@
 \maketitle
 
 \begin{abstract}
-  The abstract paragraph should be indented \nicefrac{1}{2}~inch (3~picas) on
-  both the left- and right-hand margins. Use 10~point type, with a vertical
-  spacing (leading) of 11~points.  The word \textbf{Abstract} must be centered,
-  bold, and in point size 12. Two line spaces precede the abstract. The abstract
-  must be limited to one paragraph.
+  Nous étudions un problème d'optimisation semblable au voyageur de commerce.
+  Nous le modélisons comme un programme linéaire en nombres entiers 0-1,
+  puis nous comparons deux algorithmes de résolution basés sur des formulations
+  différents des contraintes de sous-tours.
 \end{abstract}
-
 \section{Introduction}
 
 \subsection{Notations}
 
+On note le symbole de Kronecker $\delta$.
+
 Une instance du problème est composée des données suivantes :
 \begin{itemize}
   \item Nombre d'aérodromes : $n$
-  \item Aérodrome de départ : $k$
-  \item Aérodrome d'arrivée : $l$
+  \item Aérodrome de départ : $s$ \footnote{pour \textit{start}}
+  \item Aérodrome d'arrivée : $a$
   \item Nombre d'aérodromes à parcourir : $\Amin$
   \item Nombre de régions : $m$
-  \item Région de l'aérodrome $i$ : $r_i$
+  \item Région de l'aérodrome $i$ : $l_i$ \footnote{pour \textit{Land}}
   \item Distance maximale de vol sans se poser : $R$
   \item Coordonnées cartésiennes de l'aérodrome $i$ : $(x_i, y_j)$
 \end{itemize}
 
-On suppose que la distance entre deux aérodromes est la distance euclidienne, et 
-on note $\dij := \sqrt{(x_i - x_j)^2 + (y_i - y_j)^2}$ la distance entre 
+On suppose que les aérodromes se situent sur un plan et que la distance entre
+deux aérodromes est la distance euclidienne. 
+On note $\dij := \sqrt{(x_i - x_j)^2 + (y_i - y_j)^2}$ la distance entre 
 l'aérodrome $i$ et l'aérodrome $j$.
 
 \section{Modélisation}
+
+\subsection{Graphe du problème}
+
+On modélise le problème par un graphe orienté, ayant pour sommets les aérodromes.
+Deux aérodromes sont reliés par une arête si et seulement si la distance entre
+ces aérodromes est inférieure à la distance de vol maximale.
+
+Le graphe est donc $G = (V, E)$ où $V = \left\{1,\dots,n\right\}$ etc
+$E = \left\{(i, j) \in V^2, i \neq j : d_ij \leq R\right\}$.
 
 \subsection{Objectif}
 
 On cherche à minimiser la distance parcourue, soit
 \begin{align}
-  \mathcal{Z} = \min \sum_{i, j} \xij \dij
+  \mathcal{Z} = \min \sum_{i,j : (i, j) \in E} \xij \dij
 \end{align}
 où $\xij \in \left\{0, 1\right\}$.
 
@@ -107,55 +104,60 @@ où $\xij \in \left\{0, 1\right\}$.
 sauf les aéroports d'arrivée et de départ qui sont visités exactement une fois.
 \begin{subequations}
 \begin{align}
-  \forall i \notin \left\{k, l\right\},\; \sum_j \xij \leq 1 \\
-  \forall i \notin \left\{k, l\right\},\; \sum_j \xji \leq 1
+  \forall i \notin \left\{s, a\right\},\;
+    \sum_{j: (i, j) \in E} \xij \leq 1 \\
+  \forall i \notin \left\{s, a\right\},\;
+    \sum_{j: (j, i) \in E} \xji \leq 1
 \end{align}
 \end{subequations}
 
 \paragraph{Connexité}
 \begin{subequations}
-L'avion doit partir de $k$
+  \label{cons:connex}
+L'avion doit partir de $s$
 \begin{align}
-  \sum_j x_{kj} & = 1 \\
-  \sum_j x_{jk} & = \delta_{kl}
+  \sum_{j: (s, j) \in E} x_{sj} & = 1 \\
+  \sum_{j \neq a: (j, s) \in E} x_{js} & = 0\\
+  x_{as} & = \delta_{as} \label{cons:s_eq_a}
 \end{align}
-et arriver en $l$
+et arriver en $a$
 \begin{align}
-  \sum_j x_{lj} & = \delta_{kl} \\
-  \sum_j x_{jl} & = 1
+  \sum_{j: (j, a) \in E} x_{ja} & = 1 \\
+  \sum_{j \neq a : (a, j) \in E} x_{aj} & = 0 \\
 \end{align}
-On autorise ainsi que les aérodromes d'arrivée et de départ soient identiques.
+La contrainte \ref{cons:s_eq_a}
+autorise que les aérodromes d'arrivée et de
+départ soient identiques. Cela suppose que $d_{as} \leq R$,
+sinon le problème n'est par réalisable.
 \medbreak
 
 Un avion repart d'un aérodrome seulement si et seulement 
 si il s'est posé à cet aérodrome.
 \begin{align}  
-  \forall i \notin \left\{k, l\right\},\; \sum_j \xji = \sum_j \xij
+  \forall i \notin \left\{s, a\right\},\; 
+    \sum_{j: (j, i) \in E} \xji = \sum_{j : (i, j) \in E} \xij
 \end{align}
 \end{subequations}
 
 \paragraph{Nombre minimum d'aérodromes visités} L'avion doit visiter au moins
-$\Amin$ aérodromes :
+$\Amin$ aérodromes.
 \begin{align}
-  \sum_{i,j} \xij \geq \Amin
+  \sum_{i, j: (i, j) \in E} \xij \geq \Amin - 1 + \delta_{sa}
 \end{align}
+Ici encore $\delta_{sa}$ permet de tenir compte du cas où $s = a$ et que
+la solution est un cycle.
 
 \paragraph{Diversité des régions} La contrainte de visiter au moins une fois
-chaque région une fois s'écrit, en notant $I_r := \left\{ i : r_i = r \right\}$
-l'ensemble des aéroports appartenant à la région $r$, et $R$ l'ensemble des 
-régions comportant au moins un aérodrome,
+chaque région une fois s'écrit, en notant
+$\mathcal{A}_l := \left\{ i : l_i = a \right\}$
+l'ensemble des aéroports appartenant à la région $a$, et $\mathcal{L}$
+l'ensemble des régions comportant au moins un aérodrome.
 \begin{align}
-  \forall r \in R \setminus \left\{0, r_k, r_l\right\},\;
-  \sum_{i \in I_r} \xij \geq 1
+  \forall l \in \mathcal{L} \setminus \left\{l_s, l_a\right\},\;
+  \sum_{i \in \mathcal{A}_l: (i, j) \in E} \xij \geq 1
 \end{align}
-On a supprimé les contraintes sur les régions $r_1$ et $r_l$, 
-qui sont redondantes avec \textbf{FILLME}
-
-\paragraph{Distance de vol maximale} Un avion peut parcourir une distance d'au plus
-$R$ sans se poser. Cela se traduit par
-\begin{align}
-  \forall i, j : i \neq j,\; \xij \dij \leq R
-\end{align}
+On a supprimé les contraintes sur les régions $r_s$ et $r_a$, 
+qui sont redondantes avec les contraintes d'arrivée et de départ.
 
 \subsection{Contraintes d'élimination des sous-tours}
 
@@ -166,22 +168,26 @@ cycles.
 \paragraph{Nombre polynomial de contraintes}
 
 \begin{align}
-  \forall i,j : i \neq k, j \neq k,\; u_j \geq u_i - n (1 - \xij)
+  & \forall i \neq s, j\neq a: (i, j) \in E,\; 
+    u_j \geq u_i - n (1 - \xij) \\
+  &  u_i \in \mathbb{Z}
 \end{align}
-Cela force $u_i > u_j$ pour $i$ et $j$ connectés, et interdit donc les cycles 
-(sauf pour $i = k$ ou $j = k$, ce qui permet de revenir en $k$ si $k = l$).
+\end{subequations}
+Ceci force $u_i > u_j$ quand l'avion va de $i$ à $j$, et interdit donc les cycles.
 
 \paragraph{Nombre exponentiel de contraintes}
-
+On peut aussi interdire les sous-tours au sein de tous les sous-graphes.
 \begin{align}
-  \forall S \subset (V \setminus \left\{l\right\})
-                \cup
-                (V \setminus \left\{r\right\}),
-          |S| > 1,\;
-  \sum_{i \in S, j \in S} \xij \leq |S| - 1,
+  \forall S \subset G,\;
+  \sum_{i \in S, j \in S} \xij \leq |S| - 1 \label{cons:subtours}
 \end{align}
+Cependant, le nombre de sous-graphe croit exponentiellement avec la taille du
+graphe.
 
-\end{subequations}
+Il faut donc générer donc des contraintes à chaque nœud de
+l'algorithme \textit{branch \& cut}.
+Pour cela on détecte d'abord les contraintes violées parmi (\ref{cons:subtours}),
+puis on ajoute ces contraintes au modèle.
 
 \section{Étude numérique}
 
