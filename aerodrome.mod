@@ -6,8 +6,7 @@ param finish;
 param Amin;
 param Nregions;
 
-param regions{i in 1..Nregions};
+param regions{i in 1..N};
 param rmax;
 
-param X{i in 1..N};
-param Y{i in 1..N};
+param coordonnes{i in 1..N, k in 1..2};
