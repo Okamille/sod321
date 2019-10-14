@@ -12,7 +12,11 @@ read finish < (filename);
 read Amin < (filename);
 read Nregions < (filename);
 
+read < (filename);
+
 read {i in 1..Nregions} regions[i] < (filename);
+
+read < (filename);
 
 read rmax < (filename);
 
