@@ -6,17 +6,17 @@ model aerodrome.mod;
 
 let filename := "instances/aerodrome_0.txt";
 
-read N < filename;
-read start < filename;
-read finish < filename;
-read Amin < filename;
-read Nregions < filename;
+read N < (filename);
+read start < (filename);
+read finish < (filename);
+read Amin < (filename);
+read Nregions < (filename);
 
-read {i in 1..Nregions} regions[i] < filename;
+read {i in 1..Nregions} regions[i] < (filename);
 
-read rmax < filename;
+read rmax < (filename);
 
 for {i in 1..N} {
-read X[i], Y[i] < filename;
+read X[i], Y[i] < (filename);
 printf "x[%d] = %d and x[%d] = %d", i, X[i], i, Y[i];
 };
