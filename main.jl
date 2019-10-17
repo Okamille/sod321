@@ -1,8 +1,8 @@
 include("model.jl")
 include("utils.jl")
 
-using .BreitlingCup: build_model, run_optimization!, solve_with_lazy_constraints!
-using .Utils: load_instance, recover_path, write_results_to_file
+using .BreitlingCup: build_model, run_optimization!, solve_w_lazy_ILP!
+using .Utils: load_instance, recover_path, save_results
 
 
 function solve_instance(instance_name, subtour_constraint)
@@ -20,26 +20,26 @@ function solve_instance(instance_name, subtour_constraint)
     if subtour_constraint == "polynomial"
         @time objective, solution = run_optimization!(model)
     else
-        @time objective, solution = solve_with_lazy_constraints!(
+        @time objective, solution = solve_w_lazy_ILP!(
             model, params["start_index"], params["end_index"]
         )
     end
 
-    println(objective)
     path = recover_path(solution, params["start_index"], params["end_index"])
-    println(path)
-    write_results_to_file(path, "results.txt")
-    println()
+    solution = Dict("objective"=>objective, "path"=>path)
+    return solution
 end
 
 subtour_constraint = ARGS[1]
 instance_name = ARGS[2]
 
-
 if instance_name == "all"
-    for instance_name in readdir("instances")
-        solve_instance(split(instance_name, ".")[1], subtour_constraint)
+    for instance in readdir("instances")
+        instance_name = split(instance, ".")[1]
+        solution = solve_instance(instance_name, subtour_constraint)
+        save_results(solution, instance_name, subtour_constraint)
     end
 else
-    solve_instance(instance_name, subtour_constraint)
+    solution = solve_instance(instance_name, subtour_constraint)
+    save_results(solution,instance_name, subtour_constraint)
 end

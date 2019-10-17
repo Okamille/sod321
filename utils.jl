@@ -1,6 +1,7 @@
 module Utils
 
-export load_instance, recover_path
+import JSON
+export load_instance, recover_path, save_results
 
 function load_instance(instance_name)
     lines = readlines(joinpath("instances", "$instance_name.txt"))
@@ -33,9 +34,12 @@ function recover_path(solution, start_id, end_id)
     return path
 end
 
-function write_results_to_file(solution, filename)
-    file = open(filename, "w")
-    write(file, solution)
+function save_results(solution, instance_name, constraint_type)
+    open(joinpath("results", constraint_type,
+                  "$instance_name.json"), "w") do f
+        JSON.print(f, solution, 4)
+    end
+    JSON.print(solution, 4)
 end
 
 end

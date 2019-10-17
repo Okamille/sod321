@@ -4,7 +4,7 @@ using LinearAlgebra: diag, norm, Symmetric
 using JuMP
 import GLPK
 
-export build_model, run_optimization!, solve_with_lazy_constraints!
+export build_model, run_optimization!, solve_w_lazy_ILP!
 
 
 function build_model(; coordinates, airports_regions, start_id, end_id,
@@ -69,6 +69,16 @@ function build_model(; coordinates, airports_regions, start_id, end_id,
 end
 
 
+function subtour_subproblem(model, n)
+    subproblem = Model(with_optimizer(GLPK.Optimizer))
+    @variable(subproblem, z[i=1:n], Bin)
+    x = model[:x]
+    @objective(subproblem, Max,
+               sum([[x[i, j] * z[i] * z[j] for i=1:n] for j=1:n]))
+    return subproblem
+end
+
+
 function run_optimization!(model)
     optimize!(model)
 
@@ -82,7 +92,7 @@ function run_optimization!(model)
 end
 
 
-function solve_with_lazy_constraints!(model, start_id, end_id)
+function solve_w_lazy_ILP!(model, start_id, end_id)
     while true
         objective, solution = run_optimization!(model)
         subtours = find_subtours(solution, start_id, end_id)
