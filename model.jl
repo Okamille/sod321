@@ -85,19 +85,24 @@ function run_optimization!(model)
     if termination_status(model) == MOI.OPTIMAL
         optimal_solution = value.(model[:x])
         optimal_objective = objective_value(model)
-        return optimal_objective, optimal_solution
+        solving_time = MOI.get(model, MOI.SolveTime())
+        # println(MOI.get(model, MOI.SimplexIterations())
+        # println(MOI.get(model, MOI.BarrierIterations())
+        # println(MOI.get(model, MOI.NodeCount())
+        return optimal_objective, optimal_solution, solving_time
     end
-
     error("The model was not solved correctly.")
 end
 
 
 function solve_w_lazy_ILP!(model, start_id, end_id)
+    total_solving_time = 0.
     while true
-        objective, solution = run_optimization!(model)
+        objective, solution, solving_time = run_optimization!(model)
+        total_solving_time += solving_time
         subtours = find_subtours(solution, start_id, end_id)
         if size(subtours, 1) == 0
-            return objective, solution
+            return objective, solution, total_solving_time
         else
             x = model[:x]
             for subtour in subtours

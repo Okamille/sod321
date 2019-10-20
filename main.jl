@@ -18,15 +18,16 @@ function solve_instance(instance_name, subtour_constraint)
                         subtour_constraint=subtour_constraint)
 
     if subtour_constraint == "polynomial"
-        @time objective, solution = run_optimization!(model)
+        @time objective, solution, solving_time = run_optimization!(model)
     else
-        @time objective, solution = solve_w_lazy_ILP!(
+        @time objective, solution, solving_time = solve_w_lazy_ILP!(
             model, params["start_index"], params["end_index"]
         )
     end
 
     path = recover_path(solution, params["start_index"], params["end_index"])
-    solution = Dict("objective"=>objective, "path"=>path)
+    solution = Dict("objective"=>objective, "path"=>path,
+                    "time_spent_in_solver"=>solving_time)
     return solution
 end
 
