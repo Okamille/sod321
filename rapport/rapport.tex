@@ -5,6 +5,8 @@
 % before loading neurips_2019
 
 \usepackage[final]{neurips_2019}
+\usepackage{graphicx}
+
 
 % to avoid loading the natbib package, add option nonatbib:
 %     \usepackage[nonatbib]{neurips_2019}
@@ -169,7 +171,7 @@ cycles.
 
 \begin{align}
   & \forall i \neq s, j\neq a: (i, j) \in E,\; 
-    u_j \geq u_i - n (1 - \xij) \\
+    u_j \geq u_i + 1 - n (1 - \xij) \\
   &  u_i \in \mathbb{Z}
 \end{align}
 \end{subequations}
@@ -189,6 +191,48 @@ l'algorithme \textit{branch \& cut}.
 Pour cela on détecte d'abord les contraintes violées parmi (\ref{cons:subtours}),
 puis on ajoute ces contraintes au modèle.
 
+Cela revient à détecter les sous tours dans la solution courante.
+
+Pour cela, on implémente une détection en $\mathcal{O}(n^2)$ qui permet de détecter les sous-tours puis, on ajoute les coupes associées pour s'en débarrasser.
+
+Pour cela, une fois à l'aéroport $i$ on trouve l'aéroport suivant en faisant $argmax_j x_{ij}$.
+On garde ensuite une liste de tous les indices qui ont déjà été sélectionnés et on boucle sur tous les indices.
+A partir du moment où on détecte un indice $i$ qui n'est pas dans la liste et tel que $\sum_j x_{ij} = 1$, on extrait le sous tour.
+
 \section{Étude numérique}
+
+On implémente les deux méthodes de résolution (polynomiales et exponentielles) en Julia
+
+\begin{table}[!ht]
+\begin{tabular}{|l|c|c|c|c|c|c|c|c|c|c|}
+\hline
+Instance     & \multicolumn{1}{l|}{0} & \multicolumn{1}{l|}{20_1} & \multicolumn{1}{l|}{20_2} & \multicolumn{1}{l|}{20_3} & \multicolumn{1}{l|}{20_4} & \multicolumn{1}{l|}{30_1} & \multicolumn{1}{l|}{40_1} & \multicolumn{1}{l|}{50_1} & \multicolumn{1}{l|}{70_1} & \multicolumn{1}{l|}{80_1} \\ \hline
+\multicolumn{11}{|l|}{Polynomial}                                                                                                                                                                                                                                                                 \\ \hline
+Temps (en s) & 0.002                  & 8                         & 0.37                      & 0.79                      & 6.4                       & 556                       & 19.1                      & 1802                      & /                         & /                         \\ \hline
+\multicolumn{11}{|l|}{Exponentiel}                                                                                                                                                                                                                                                                \\ \hline
+Temps (en s) & 0.002                  & 490                       & 1.23                      & 6.3                       & 30                        & /                         & 78                        & /                         & /                         & /                         \\ \hline
+\end{tabular}
+\end{table}
+
+Pour les instances où la résolution ne se termine pas en temps raisonnable, on pourrait comparer
+les bornes obtenues par relaxation continues à un temps limite donné.
+
+On constate que notre implémentation exponentielle prend beaucoup plus de temps que la résolution polynomiale, mais on peut espérer qu'elle fournit une borne supérieure plus rapidement.
+
+On peut également noter que le solveur julia open source que nous utilisons est potentiellement plus lent que CPLEX, ce qui peut également expliquer le temps que prend l'algorithme.
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[scale=0.7]{20.png}
+    \caption{Visualisation de la solution pour 20 aérodromes}
+    \label{fig:20}
+\end{figure}
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[scale=0.7]{40.png}
+    \caption{Visualisation de la solution pour 40 aérodromes}
+    \label{fig:20}
+\end{figure}
 
 \end{document}
